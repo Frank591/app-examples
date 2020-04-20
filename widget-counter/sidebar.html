@@ -115,13 +115,13 @@
         miro.board.selection.get().then(showStatistics);
     });
 
-    function showStatistics(selection) {
+    async function showStatistics(selection) {
         const CARD_TYPE = "CARD";
         clear();
 
         const cardsOnBoard = new Map();
 
-        miro.board.widgets.get({type:CARD_TYPE}).forEach((card)=>{
+        (await miro.board.widgets.get({type:CARD_TYPE})).forEach((card)=>{
            cardsOnBoard.set(card.id, card);
         });
 

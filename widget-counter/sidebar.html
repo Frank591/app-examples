@@ -97,34 +97,27 @@
     <div class="sidebar__content">
         <div id="stat-container" class="stat-list">
             <div class="stat-list__header">Widget Counter</div>
-            <!-- <div class="stat-list__table">
-                <div class="stat-list__title">
-                    <span>by Type</span>
-                </div>
-                <div class="stat-list__empty">
-                    Looks like the selection is empty.
-                </div>
-                <div class="stat-list__item">
-                    <span class="stat-list__item-name">Sticker</span>
-                    <span class="stat-list__item-value">10</span>
-                </div>
-            </div> -->
+
         </div>
     </div>
 </body>
 </html>
 
 <script type="text/javascript">
+
+
+
     miro.onReady(() => {
         miro.addListener('SELECTION_UPDATED', (e) => {
-            showStatistics(e.data)
-        })
-        miro.board.selection.get().then(showStatistics)
-    })
+            showStatistics(e.data);
+        });
+        miro.board.selection.get().then(showStatistics);
+    });
 
     function showStatistics(selection) {
+        const CARD_TYPE = "CARD";
         clear();
-        const statByType = calcByType(selection)
+        const statByType = countTagsStatistic(selection.get({type: CARD_TYPE}));
         getContainer().appendChild(createStatTable(
             "by Type", 
             "Looks like the selection is empty.", 
@@ -169,9 +162,7 @@
         return statView
     }
 
-    function calcByType(widgets) {
-        return countBy(widgets, (a) => a.type)
-    }
+
 
     function countBy(list, keyGetter) {
         const map = new Map()
@@ -182,4 +173,134 @@
         });
         return new Map([...map.entries()].sort((a,b) => b[1] - a[1]))
     }
+
+    function countTagsStatistic(cards) {
+        const tagsStatistic = new Map();
+
+        for(let i = 0; i < cards.length; i++) {
+            let card = cards[i];
+            let cardTagsStat = getCardStatistic(card);
+            cardTagsStat.forEach((tagStat)=>{
+                if (tagsStatistic.has(tagStat.tagId)){
+                    let existingTagStat = tagsStatistic.get(tagStat.tagId);
+                    existingTagStat.cardsCount+=tagStat.cardsCount;
+                    existingTagStat.timeInMin+=tagStat.timeInMin;
+                    existingTagStat.unparsedCardsCount+=tagStat.unparsedCardsCount;
+                }
+                else{
+                    tagsStatistic.set(tagStat.tagId, new TagStatistic(tagStat.tagId,
+                    tagStat.tagName,
+                    tagStat.cardsCount,
+                    tagStat.timeInMin,
+                    tagStat.unparsedCardsCount));
+                }
+            });
+        }
+        return tagsStatistic;
+    }
+
+    function TagStatistic(tagId, tagName, cardsCount, timeInMin, unparsedCardsCount){
+        this.tagId = tagId;
+        this.tagName = tagName;
+        this.cardsCount = cardsCount;
+        this.timeInMin = timeInMin;
+        this.unparsedCardsCount = unparsedCardsCount;
+    }
+
+    function getCardStatistic(card){
+        const CARDS_WITHOUT_TAGS_KEY = -1;
+        const CARDS_WITHOUT_TAGS_NAME = "Cards without tags";
+        const timeParseResult = parseTime(card.title);
+
+        if (card.tags.length === 0){
+
+            return new Array(new TagStatistic(CARDS_WITHOUT_TAGS_KEY,
+                CARDS_WITHOUT_TAGS_NAME,
+                1,
+                timeParseResult.timeInMin,
+                timeParseResult.isSuccess ? 1 : 0));
+        }
+
+        let result = [];
+        card.tags.forEach((tag)=> {
+
+            result.push(new TagStatistic(tag.id,
+                tag.name,
+                1,
+                timeParseResult.timeInMin,
+                timeParseResult.isSuccess ? 1 : 0));
+        });
+        return result;
+    }
+
+    function parseTime(source) {
+        const trimmedSource=source.replace('<p>','').replace('</p>','');
+        const TIME_REGEX = new RegExp('^\s*\\(([0-9]*)\\)','m');
+
+        const timeRegexMatch = trimmedSource.match(TIME_REGEX);
+        let time = 0;
+        if (timeRegexMatch == null|| timeRegexMatch.length !== 2){
+            return new ParseResult();
+        }
+        time = parseInt(timeRegexMatch[1]);
+        return new ParseResult(true, time);
+    }
+
+    function ParseResult(success = false, timeInMin= 0){
+        this.isSuccess = success;
+        this.timeInMin = timeInMin;
+    }
+
+
+///// ^
+
+    function TagTimeStatistic(tagId, cardsCount = 0, timeInMin = 0, unparsedCardsCount = 0){
+        this.tagId = tagId;
+        this.cardsCount = cardsCount;
+        this.timeInMin = timeInMin;
+        this.unparsedCardsCount = unparsedCardsCount;
+    }
+
+    var cards = await miro.board.widgets.get({type:'CARD'});
+    var totalCardsCount = cards.length;
+    console.log(cards[0].tags);
+    console.log("total cards count = " + totalCardsCount);
+    var cardsByTags = new Map();
+    var cardsWithoutTagsKey = -1;
+    cardsByTags.set(cardsWithoutTagsKey,new TagTime(cardsWithoutTagsKey, 0, 0));
+    console.log("before loop");
+    for(var i = 0; i < cards.length; i++){
+        var card = cards[i];
+        if (card.tags.length == 0){
+            cardsByTags.get(cardsWithoutTagsKey).cardsCount++;
+            continue;
+        }
+
+        var cardTitle=card.title.replace('<p>','').replace('</p>','');
+        let cardTimeRegex = new RegExp('^\s*\\(([0-9]*)\\)','m');
+        var cardTimeRegexMatch = cardTitle.match(cardTimeRegex);
+        var cardTime = 0;
+        if (cardTimeRegexMatch!=null && cardTimeRegexMatch.length == 2){
+            cardTime = parseInt(cardTimeRegexMatch[1]);
+        }
+
+        card.tags.forEach((tag)=>{
+            var tagId = tag.id;
+            if (cardsByTags.has(tagId)){
+                var tagTime = cardsByTags.get(tagId);
+                tagTime.cardsCount++;
+                tagTime.timeInMin+=cardTime;
+            } else{
+                cardsByTags.set(tagId, new TagTime(tagId, 1, cardTime));
+            }
+        });
+
+        console.log(cardTime);
+    }
+    cardsByTags.forEach((tagStat)=>{
+        console.log(tagStat.tagId+" "+tagStat.cardsCount+" "+tagStat.timeInMin);
+    });
+//////
+
+
 </script>

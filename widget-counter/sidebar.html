@@ -117,7 +117,13 @@
     function showStatistics(selection) {
         const CARD_TYPE = "CARD";
         clear();
-        const statByType = countTagsStatistic(selection.get({type: CARD_TYPE}));
+        let cardsInSelection = [];
+        selection.forEach((item)=>{
+           if (item.type === CARD_TYPE){
+               cardsInSelection.push(item);
+           }
+        });
+        const statByType = countTagsStatistic(cardsInSelection);
         getContainer().appendChild(createStatTable(
             "by Type", 
             "Looks like the selection is empty.", 

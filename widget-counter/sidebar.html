@@ -107,6 +107,7 @@
 
 
 
+
     miro.onReady(() => {
         miro.addListener('SELECTION_UPDATED', (e) => {
             showStatistics(e.data);
@@ -117,10 +118,17 @@
     function showStatistics(selection) {
         const CARD_TYPE = "CARD";
         clear();
+
+        const cardsOnBoard = new Map();
+
+        miro.board.widgets.get({type:CARD_TYPE}).forEach((card)=>{
+           cardsOnBoard.set(card.id, card);
+        });
+
         let cardsInSelection = [];
         selection.forEach((item)=>{
            if (item.type === CARD_TYPE){
-               cardsInSelection.push(item);
+               cardsInSelection.push(cardsOnBoard.get(item.id));
            }
         });
         const statByType = countTagsStatistic(cardsInSelection);

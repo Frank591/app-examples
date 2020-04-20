@@ -46,7 +46,7 @@
       font-weight: 500;
     }
     .stat-list .stat-list__empty {
-      color: #050038
+      color: #050038;
       font-size: 12px;
       margin: 20px 0 20px 0;
       padding: 0 24px 0 24px;
@@ -250,57 +250,5 @@
         this.isSuccess = success;
         this.timeInMin = timeInMin;
     }
-
-
-///// ^
-
-    function TagTimeStatistic(tagId, cardsCount = 0, timeInMin = 0, unparsedCardsCount = 0){
-        this.tagId = tagId;
-        this.cardsCount = cardsCount;
-        this.timeInMin = timeInMin;
-        this.unparsedCardsCount = unparsedCardsCount;
-    }
-
-    var cards = await miro.board.widgets.get({type:'CARD'});
-    var totalCardsCount = cards.length;
-    console.log(cards[0].tags);
-    console.log("total cards count = " + totalCardsCount);
-    var cardsByTags = new Map();
-    var cardsWithoutTagsKey = -1;
-    cardsByTags.set(cardsWithoutTagsKey,new TagTime(cardsWithoutTagsKey, 0, 0));
-    console.log("before loop");
-    for(var i = 0; i < cards.length; i++){
-        var card = cards[i];
-        if (card.tags.length == 0){
-            cardsByTags.get(cardsWithoutTagsKey).cardsCount++;
-            continue;
-        }
-
-        var cardTitle=card.title.replace('<p>','').replace('</p>','');
-        let cardTimeRegex = new RegExp('^\s*\\(([0-9]*)\\)','m');
-        var cardTimeRegexMatch = cardTitle.match(cardTimeRegex);
-        var cardTime = 0;
-        if (cardTimeRegexMatch!=null && cardTimeRegexMatch.length == 2){
-            cardTime = parseInt(cardTimeRegexMatch[1]);
-        }
-
-        card.tags.forEach((tag)=>{
-            var tagId = tag.id;
-            if (cardsByTags.has(tagId)){
-                var tagTime = cardsByTags.get(tagId);
-                tagTime.cardsCount++;
-                tagTime.timeInMin+=cardTime;
-            } else{
-                cardsByTags.set(tagId, new TagTime(tagId, 1, cardTime));
-            }
-        });
-
-        console.log(cardTime);
-    }
-    cardsByTags.forEach((tagStat)=>{
-        console.log(tagStat.tagId+" "+tagStat.cardsCount+" "+tagStat.timeInMin);
-    });
-//////
-
 
 </script>
